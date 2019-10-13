@@ -69,11 +69,11 @@ function parseInputFiles(){
     for (( j=0; j<argc; j++ )); do
         file=${argv[j]}
         
-        if [ ! -f "$file" ] ; then
-            result="${result}FILE: $file, ${RED_COLOR}invalid path${COLOR_OFF}\n"
+        if [[ !( -f "$file" && -s "$file") ]] ; then
+            result="${result}FILE: $file, ${RED_COLOR}missing or empty file${COLOR_OFF}\n"
         fi
 
-        if [ -f "$file" ] ; then
+        if [[ -f "$file" && -s "$file" ]] ; then
             tmpFile=tmp.txt
             cp $file $tmpFile
             normalizeFile
