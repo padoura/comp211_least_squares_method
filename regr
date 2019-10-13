@@ -1,0 +1,107 @@
+#!/bin/bash
+argc=$#
+argv=("$@")
+result=""
+LINE_REGEXP="^[-+]?[0-9]+\.?[0-9]*:[-+]?[0-9]+\.?[0-9]*\s*$"
+RED_COLOR="\033[0;31m"
+BLUE_COLOR="\033[0;34m"
+COLOR_OFF="\033[0m"
+SCALE="2"
+
+function printHelp(){
+    echo "..."
+    echo "@~> Linear Least Squares Solver <~@"
+    echo "usage: regr [ -h or --help ] You are here"
+    echo "            [ -t or --test ] Run all test .txt files in ./testFiles folder"
+    echo "            [ {pathToFile} ] One or more files with lines formatted as \"num1:num2\" "
+    echo "e.g.:"
+    echo "{ ./regr inputFile1 inputFile2 inputFile3 }"
+}
+
+function printHelpIfInvoked(){
+    for (( j=0; j<argc; j++ )); do
+        arg=${argv[j]}
+        if [ "$arg" == "--help" ] || [ "$arg" == "-h" ]; then
+            printHelp
+            exit
+        fi 
+    done
+}
+
+function runTest(){
+    runTestCommand="./regr $(find ./testFiles -name '*.txt' | tr '\n' ' ')"
+    eval $runTestCommand
+}
+
+function runTestIfInvoked(){
+    for (( j=0; j<argc; j++ )); do
+        arg=${argv[j]}
+        if [ "$arg" == "--test" ] || [ "$arg" == "-t" ]; then
+            runTest
+            exit
+        fi 
+    done
+}
+
+function calculateParameters(){
+    length=$(wc -l < $tmpFile)
+    sum_x=$(awk -F ':' '{s+=$1} END {print s}' $tmpFile)
+    sum_y=$(awk -F ':' '{s+=$2} END {print s}' $tmpFile)
+    sum_x2=$(awk -F ':' '{s+=$1^2} END {print s}' $tmpFile)
+    sum_xy=$(awk -F ':' '{s+=$1*$2} END {print s}' $tmpFile)
+    alpha=$(echo "scale=6; ($length * $sum_xy - $sum_x * $sum_y) / ($length * $sum_x2 - $sum_x * $sum_x)" | bc)
+    beta=$(echo "scale=6; ($sum_y - $alpha * $sum_x) / $length" | bc)
+    err=$(awk -v alpha="$alpha" -v beta="$beta" -F ':' '{s+=($2-(alpha*$1+beta))^2} END {print s;}' $tmpFile)
+    alpha=$(echo "scale=$SCALE; $alpha/1" | bc | sed 's/\.0*$//')
+    beta=$(echo "scale=$SCALE; $beta/1" | bc | sed 's/\.0*$//')
+    err=$(echo "scale=$SCALE; $err/1" | bc | sed 's/\.0*$//')
+    result="${result}FILE: $file, ${BLUE_COLOR}a=$alpha b=$beta c=1 err=$err${COLOR_OFF}\n"
+}
+
+function normalizeFile(){
+    echo "" >> $tmpFile
+    sed '/^$/d' $tmpFile > ${tmpFile}.bup
+    cp ${tmpFile}.bup $tmpFile
+    rm ${tmpFile}.bup
+}
+
+function parseInputFiles(){
+    for (( j=0; j<argc; j++ )); do
+        file=${argv[j]}
+        
+        if [ ! -f "$file" ] ; then
+            result="${result}FILE: $file, ${RED_COLOR}invalid path${COLOR_OFF}\n"
+        fi
+
+        if [ -f "$file" ] ; then
+            tmpFile=tmp.txt
+            cp $file $tmpFile
+            normalizeFile
+            if [ "$(wc -l < $tmpFile)" -lt "3" ]; then
+                result="${result}FILE: $file, ${RED_COLOR}not enough lines - at least 3 data points needed${COLOR_OFF}\n"
+            elif [[ !(-z "$(grep -Ev "$LINE_REGEXP" $tmpFile)") ]]; then
+                firstInvalidLine=$(grep -Evn "$LINE_REGEXP" $tmpFile | head -n 1)
+                lineNumber=$(echo $firstInvalidLine | cut -f 1 -d ':')
+                firstInvalidLine=$(grep -Ev "$LINE_REGEXP" $tmpFile | head -n 1)
+                result="${result}FILE: $file, ${RED_COLOR}invalid line $lineNumber: \"$firstInvalidLine\" - valid line \"num1:num2\" should be matched by LINE_REGEXP=\"$LINE_REGEXP\"${COLOR_OFF}\n"
+            else
+                calculateParameters
+            fi
+            rm $tmpFile
+        fi
+
+    done
+}
+
+function printResult(){
+    printf "$result"
+}
+
+printHelpIfInvoked
+runTestIfInvoked
+parseInputFiles
+printResult
+
+
+
+
