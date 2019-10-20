@@ -52,9 +52,9 @@ function calculateParameters(){
     alpha=$(echo "scale=6; ($length * $sum_xy - $sum_x * $sum_y) / ($length * $sum_x2 - $sum_x * $sum_x)" | bc)
     beta=$(echo "scale=6; ($sum_y - $alpha * $sum_x) / $length" | bc)
     err=$(awk -v alpha="$alpha" -v beta="$beta" -F ':' '{s+=($2-(alpha*$1+beta))^2} END {print s;}' $tmpFile)
-    alpha=$(echo "scale=$SCALE; $alpha/1" | bc | sed 's/\.0*$//')
-    beta=$(echo "scale=$SCALE; $beta/1" | bc | sed 's/\.0*$//')
-    err=$(echo "scale=$SCALE; $err/1" | bc | sed 's/\.0*$//')
+    alpha=$(echo "scale=$SCALE; $alpha/1" | bc | sed 's/\.0*$//' | sed 's/^\./0./' | sed 's/^-\./-0./' )
+    beta=$(echo "scale=$SCALE; $beta/1" | bc | sed 's/\.0*$//' | sed 's/^\./0./' | sed 's/^-\./-0./' )
+    err=$(echo "scale=$SCALE; $err/1" | bc | sed 's/\.0*$//' | sed 's/^\./0./' | sed 's/^-\./-0./' )
     result="${result}FILE: $file, ${BLUE_COLOR}a=$alpha b=$beta c=1 err=$err${COLOR_OFF}\n"
 }
 
