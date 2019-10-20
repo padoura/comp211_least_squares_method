@@ -79,8 +79,8 @@ function parseInputFiles(){
             normalizeFile
             if [ "$(wc -l < $tmpFile)" -lt "3" ]; then
                 result="${result}FILE: $file, ${RED_COLOR}not enough lines - at least 3 data points needed${COLOR_OFF}\n"
-            elif [ "$(uniq $tmpFile | wc -l)" -eq "1" ] || [ "$(cut -f 1 -d ':' $tmpFile | uniq | wc -l)" -eq "1" ] || [ "$(cut -f 2 -d ':' $tmpFile | uniq | wc -l)" -eq "1" ]; then
-                result="${result}FILE: $file, ${RED_COLOR}constant vectors - vectors must be nonconstant${COLOR_OFF}\n"
+            elif [ "$(cut -f 1 -d ':' $tmpFile | uniq | wc -l)" -eq "1" ]; then
+                result="${result}FILE: $file, ${RED_COLOR}constant vector X - first column should contain at least two nonequal values${COLOR_OFF}\n"
             elif ! [ -z "$(grep -Ev "$LINE_REGEXP" $tmpFile)" ]; then
                 firstInvalidLine=$(grep -Evn "$LINE_REGEXP" $tmpFile | head -n 1)
                 lineNumber=$(echo $firstInvalidLine | cut -f 1 -d ':')
