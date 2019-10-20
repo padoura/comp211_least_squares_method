@@ -69,19 +69,19 @@ function parseInputFiles(){
     for (( j=0; j<argc; j++ )); do
         file=${argv[j]}
         
-        if [[ !( -f "$file" && -s "$file") ]] ; then
+        if ! ([ -f "$file" ] && [ -s "$file" ]) ; then
             result="${result}FILE: $file, ${RED_COLOR}missing or empty file${COLOR_OFF}\n"
         fi
 
-        if [[ -f "$file" && -s "$file" ]] ; then
+        if [ -f "$file" ] && [ -s "$file" ] ; then
             tmpFile=tmp.txt
             cp $file $tmpFile
             normalizeFile
             if [ "$(wc -l < $tmpFile)" -lt "3" ]; then
                 result="${result}FILE: $file, ${RED_COLOR}not enough lines - at least 3 data points needed${COLOR_OFF}\n"
-            elif [[ "$(uniq $tmpFile | wc -l)" -eq "1" || "$(cut -f 1 -d ':' $tmpFile | uniq | wc -l)" -eq "1" || "$(cut -f 2 -d ':' $tmpFile | uniq | wc -l)" -eq "1" ]]; then
+            elif [ "$(uniq $tmpFile | wc -l)" -eq "1" ] || [ "$(cut -f 1 -d ':' $tmpFile | uniq | wc -l)" -eq "1" ] || [ "$(cut -f 2 -d ':' $tmpFile | uniq | wc -l)" -eq "1" ]; then
                 result="${result}FILE: $file, ${RED_COLOR}constant vectors - vectors must be nonconstant${COLOR_OFF}\n"
-            elif [[ !(-z "$(grep -Ev "$LINE_REGEXP" $tmpFile)") ]]; then
+            elif ! [ -z "$(grep -Ev "$LINE_REGEXP" $tmpFile)" ]; then
                 firstInvalidLine=$(grep -Evn "$LINE_REGEXP" $tmpFile | head -n 1)
                 lineNumber=$(echo $firstInvalidLine | cut -f 1 -d ':')
                 firstInvalidLine=$(grep -Ev "$LINE_REGEXP" $tmpFile | head -n 1)
