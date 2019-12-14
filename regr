@@ -3,6 +3,7 @@ argc=$#
 argv=("$@")
 result=""
 LINE_REGEXP="^[-+]?[0-9]+\.?[0-9]*:[-+]?[0-9]+\.?[0-9]*\s*$"
+TRAILING_ZEROS_REMOVAL="sed -E 's/(\.[0-9])0$/\1/' | sed -E 's/\.0$//' | sed -E 's/^-0$/0/'"
 RED_COLOR="\033[0;31m"
 BLUE_COLOR="\033[0;34m"
 COLOR_OFF="\033[0m"
@@ -53,9 +54,9 @@ function calculateParameters(){
     beta=$(awk -v alpha="$alpha" -v vecLength="$length" -v sum_x="$sum_x" -v sum_y="$sum_y" \
         'BEGIN {s=(sum_y - alpha * sum_x) / vecLength; print s}')
     err=$(awk -v alpha="$alpha" -v beta="$beta" -F ':' '{s+=($2-(alpha*$1+beta))^2} END {printf "%.2f", s;}' $tmpFile)
-    alpha=$(printf "%.2f" $alpha | sed 's/\.0*$//')
-    beta=$(printf "%.2f" $beta | sed 's/\.0*$//')
-    err=$(echo $err | sed 's/\.0*$//' )
+    alpha=$(printf "%.2f" $alpha | eval $TRAILING_ZEROS_REMOVAL )
+    beta=$(printf "%.2f" $beta | eval $TRAILING_ZEROS_REMOVAL )
+    err=$(echo $err | eval $TRAILING_ZEROS_REMOVAL )
     result="${result}FILE: $file, ${BLUE_COLOR}a=$alpha b=$beta c=1 err=$err${COLOR_OFF}\n"
 }
 
