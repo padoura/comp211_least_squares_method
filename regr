@@ -6,7 +6,6 @@ LINE_REGEXP="^[-+]?[0-9]+\.?[0-9]*:[-+]?[0-9]+\.?[0-9]*\s*$"
 RED_COLOR="\033[0;31m"
 BLUE_COLOR="\033[0;34m"
 COLOR_OFF="\033[0m"
-SCALE="2"
 
 function printHelp(){
     echo "..."
@@ -49,12 +48,14 @@ function calculateParameters(){
     sum_y=$(awk -F ':' '{s+=$2} END {print s}' $tmpFile)
     sum_x2=$(awk -F ':' '{s+=$1^2} END {print s}' $tmpFile)
     sum_xy=$(awk -F ':' '{s+=$1*$2} END {print s}' $tmpFile)
-    alpha=$(echo "scale=6; ($length * $sum_xy - $sum_x * $sum_y) / ($length * $sum_x2 - $sum_x * $sum_x)" | bc)
-    beta=$(echo "scale=6; ($sum_y - $alpha * $sum_x) / $length" | bc)
-    err=$(awk -v alpha="$alpha" -v beta="$beta" -F ':' '{s+=($2-(alpha*$1+beta))^2} END {print s;}' $tmpFile)
-    alpha=$(echo "scale=$SCALE; $alpha/1" | bc | sed 's/\.0*$//' | sed 's/^\./0./' | sed 's/^-\./-0./' )
-    beta=$(echo "scale=$SCALE; $beta/1" | bc | sed 's/\.0*$//' | sed 's/^\./0./' | sed 's/^-\./-0./' )
-    err=$(echo "scale=$SCALE; $err/1" | bc | sed 's/\.0*$//' | sed 's/^\./0./' | sed 's/^-\./-0./' )
+    alpha=$(awk -v vecLength="$length" -v sum_xy="$sum_xy" -v sum_x="$sum_x" -v sum_y="$sum_y" -v sum_x2="$sum_x2" \
+        'BEGIN {s=(vecLength * sum_xy - sum_x * sum_y) / (vecLength * sum_x2 - sum_x * sum_x); print s}')
+    beta=$(awk -v alpha="$alpha" -v vecLength="$length" -v sum_x="$sum_x" -v sum_y="$sum_y" \
+        'BEGIN {s=(sum_y - alpha * sum_x) / vecLength; print s}')
+    err=$(awk -v alpha="$alpha" -v beta="$beta" -F ':' '{s+=($2-(alpha*$1+beta))^2} END {printf "%.2f", s;}' $tmpFile)
+    alpha=$(printf "%.2f" $alpha | sed 's/\.0*$//')
+    beta=$(printf "%.2f" $beta | sed 's/\.0*$//')
+    err=$(echo $err | sed 's/\.0*$//' )
     result="${result}FILE: $file, ${BLUE_COLOR}a=$alpha b=$beta c=1 err=$err${COLOR_OFF}\n"
 }
 
