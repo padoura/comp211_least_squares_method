@@ -1,0 +1,43 @@
+6c6,9
+< TRAILING_ZEROS_REMOVAL="sed -E 's/(\.[0-9])0$/\1/' | sed -E 's/\.0$//' | sed -E 's/^-0$/0/'"
+---
+> RED_COLOR="\033[0;31m"
+> BLUE_COLOR="\033[0;34m"
+> COLOR_OFF="\033[0m"
+> SCALE="2"
+49,57c52,58
+<     alpha=$(awk -v vecLength="$length" -v sum_xy="$sum_xy" -v sum_x="$sum_x" -v sum_y="$sum_y" -v sum_x2="$sum_x2" \
+<         'BEGIN {s=(vecLength * sum_xy - sum_x * sum_y) / (vecLength * sum_x2 - sum_x * sum_x); print s}')
+<     beta=$(awk -v alpha="$alpha" -v vecLength="$length" -v sum_x="$sum_x" -v sum_y="$sum_y" \
+<         'BEGIN {s=(sum_y - alpha * sum_x) / vecLength; print s}')
+<     err=$(awk -v alpha="$alpha" -v beta="$beta" -F ':' '{s+=($2-(alpha*$1+beta))^2} END {printf "%.2f", s;}' $tmpFile)
+<     alpha=$(printf "%.2f" $alpha | eval $TRAILING_ZEROS_REMOVAL )
+<     beta=$(printf "%.2f" $beta | eval $TRAILING_ZEROS_REMOVAL )
+<     err=$(echo $err | eval $TRAILING_ZEROS_REMOVAL )
+<     result="${result}FILE: $file, a=$alpha b=$beta c=1 err=$err\n"
+---
+>     alpha=$(echo "scale=6; ($length * $sum_xy - $sum_x * $sum_y) / ($length * $sum_x2 - $sum_x * $sum_x)" | bc)
+>     beta=$(echo "scale=6; ($sum_y - $alpha * $sum_x) / $length" | bc)
+>     err=$(awk -v alpha="$alpha" -v beta="$beta" -F ':' '{s+=($2-(alpha*$1+beta))^2} END {print s;}' $tmpFile)
+>     alpha=$(echo "scale=$SCALE; $alpha/1" | bc | sed 's/\.0*$//' | sed 's/^\./0./' | sed 's/^-\./-0./' )
+>     beta=$(echo "scale=$SCALE; $beta/1" | bc | sed 's/\.0*$//' | sed 's/^\./0./' | sed 's/^-\./-0./' )
+>     err=$(echo "scale=$SCALE; $err/1" | bc | sed 's/\.0*$//' | sed 's/^\./0./' | sed 's/^-\./-0./' )
+>     result="${result}FILE: $file, ${BLUE_COLOR}a=$alpha b=$beta c=1 err=$err${COLOR_OFF}\n"
+72c73
+<             result="${result}FILE: $file, missing or empty file\n"
+---
+>             result="${result}FILE: $file, ${RED_COLOR}missing or empty file${COLOR_OFF}\n"
+80,84c81,83
+<                 result="${result}FILE: $file, not enough lines - at least 3 data points needed\n"
+<             elif [ "$(cut -f 1 -d ':' $tmpFile | uniq | wc -l)" -eq "1" ]; then # no sort needed before uniq
+<                 beta="$(echo "-$(cut -f 1 -d ':' $tmpFile | uniq)" | sed 's/^--/-/')"
+<                 beta="$(printf "%.2f" $beta | eval $TRAILING_ZEROS_REMOVAL )"
+<                 result="${result}FILE: $file, a=1 b=$beta c=0 err=0\n"
+---
+>                 result="${result}FILE: $file, ${RED_COLOR}not enough lines - at least 3 data points needed${COLOR_OFF}\n"
+>             elif [ "$(cut -f 1 -d ':' $tmpFile | uniq | wc -l)" -eq "1" ]; then
+>                 result="${result}FILE: $file, ${RED_COLOR}constant vector X - first column should contain at least two nonequal values${COLOR_OFF}\n"
+89c88
+<                 result="${result}FILE: $file, invalid line $lineNumber: \"$firstInvalidLine\" - valid line \"num1:num2\" should be matched by LINE_REGEXP=\"$LINE_REGEXP\"\n"
+---
+>                 result="${result}FILE: $file, ${RED_COLOR}invalid line $lineNumber: \"$firstInvalidLine\" - valid line \"num1:num2\" should be matched by LINE_REGEXP=\"$LINE_REGEXP\"${COLOR_OFF}\n"
