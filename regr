@@ -78,8 +78,9 @@ function parseInputFiles(){
             normalizeFile
             if [ "$(wc -l < $tmpFile)" -lt "3" ]; then
                 result="${result}FILE: $file, not enough lines - at least 3 data points needed\n"
-            elif [ "$(cut -f 1 -d ':' $tmpFile | uniq | wc -l)" -eq "1" ]; then # no need for sort before uniq
-                result="${result}FILE: $file, constant vector X - first column should contain at least two nonequal values\n"
+            elif [ "$(cut -f 1 -d ':' $tmpFile | uniq | wc -l)" -eq "1" ]; then # no sort needed before uniq
+                beta="$(echo "-$(cut -f 1 -d ':' $tmpFile | uniq)" | sed 's/^--/-/')"
+                result="${result}FILE: $file, a=1 b=$beta c=0 err=0\n"
             elif ! [ -z "$(grep -Ev "$LINE_REGEXP" $tmpFile)" ]; then
                 firstInvalidLine=$(grep -Evn "$LINE_REGEXP" $tmpFile | head -n 1)
                 lineNumber=$(echo $firstInvalidLine | cut -f 1 -d ':')
