@@ -4,9 +4,6 @@ argv=("$@")
 result=""
 LINE_REGEXP="^[-+]?[0-9]+\.?[0-9]*:[-+]?[0-9]+\.?[0-9]*\s*$"
 TRAILING_ZEROS_REMOVAL="sed -E 's/(\.[0-9])0$/\1/' | sed -E 's/\.0$//' | sed -E 's/^-0$/0/'"
-RED_COLOR="\033[0;31m"
-BLUE_COLOR="\033[0;34m"
-COLOR_OFF="\033[0m"
 
 function printHelp(){
     echo "..."
@@ -57,7 +54,7 @@ function calculateParameters(){
     alpha=$(printf "%.2f" $alpha | eval $TRAILING_ZEROS_REMOVAL )
     beta=$(printf "%.2f" $beta | eval $TRAILING_ZEROS_REMOVAL )
     err=$(echo $err | eval $TRAILING_ZEROS_REMOVAL )
-    result="${result}FILE: $file, ${BLUE_COLOR}a=$alpha b=$beta c=1 err=$err${COLOR_OFF}\n"
+    result="${result}FILE: $file, a=$alpha b=$beta c=1 err=$err\n"
 }
 
 function normalizeFile(){
@@ -72,7 +69,7 @@ function parseInputFiles(){
         file=${argv[j]}
         
         if ! ([ -f "$file" ] && [ -s "$file" ]) ; then
-            result="${result}FILE: $file, ${RED_COLOR}missing or empty file${COLOR_OFF}\n"
+            result="${result}FILE: $file, missing or empty file\n"
         fi
 
         if [ -f "$file" ] && [ -s "$file" ] ; then
@@ -80,14 +77,14 @@ function parseInputFiles(){
             cp $file $tmpFile
             normalizeFile
             if [ "$(wc -l < $tmpFile)" -lt "3" ]; then
-                result="${result}FILE: $file, ${RED_COLOR}not enough lines - at least 3 data points needed${COLOR_OFF}\n"
-            elif [ "$(cut -f 1 -d ':' $tmpFile | uniq | wc -l)" -eq "1" ]; then
-                result="${result}FILE: $file, ${RED_COLOR}constant vector X - first column should contain at least two nonequal values${COLOR_OFF}\n"
+                result="${result}FILE: $file, not enough lines - at least 3 data points needed\n"
+            elif [ "$(cut -f 1 -d ':' $tmpFile | uniq | wc -l)" -eq "1" ]; then # no need for sort before uniq
+                result="${result}FILE: $file, constant vector X - first column should contain at least two nonequal values\n"
             elif ! [ -z "$(grep -Ev "$LINE_REGEXP" $tmpFile)" ]; then
                 firstInvalidLine=$(grep -Evn "$LINE_REGEXP" $tmpFile | head -n 1)
                 lineNumber=$(echo $firstInvalidLine | cut -f 1 -d ':')
                 firstInvalidLine=$(grep -Ev "$LINE_REGEXP" $tmpFile | head -n 1)
-                result="${result}FILE: $file, ${RED_COLOR}invalid line $lineNumber: \"$firstInvalidLine\" - valid line \"num1:num2\" should be matched by LINE_REGEXP=\"$LINE_REGEXP\"${COLOR_OFF}\n"
+                result="${result}FILE: $file, invalid line $lineNumber: \"$firstInvalidLine\" - valid line \"num1:num2\" should be matched by LINE_REGEXP=\"$LINE_REGEXP\"\n"
             else
                 calculateParameters
             fi
