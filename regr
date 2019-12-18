@@ -82,7 +82,8 @@ function parseInputFiles(){
             if [ "$(wc -l < $tmpFile)" -lt "3" ]; then
                 result="${result}FILE: $file, ${RED_COLOR}not enough lines - at least 3 data points needed${COLOR_OFF}\n"
             elif [ "$(cut -f 1 -d ':' $tmpFile | uniq | wc -l)" -eq "1" ]; then
-                result="${result}FILE: $file, ${RED_COLOR}constant vector X - first column should contain at least two nonequal values${COLOR_OFF}\n"
+                beta="$(echo "-$(cut -f 1 -d ':' $tmpFile | uniq)" | sed 's/^--/-/')"
+                result="${result}FILE: $file, ${BLUE_COLOR}a=1 b=$beta c=0 err=0${COLOR_OFF}\n"
             elif ! [ -z "$(grep -Ev "$LINE_REGEXP" $tmpFile)" ]; then
                 firstInvalidLine=$(grep -Evn "$LINE_REGEXP" $tmpFile | head -n 1)
                 lineNumber=$(echo $firstInvalidLine | cut -f 1 -d ':')
